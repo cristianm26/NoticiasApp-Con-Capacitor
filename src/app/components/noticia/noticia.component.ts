@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Article } from '../../pages/interfaces/interfaces';
 import { Plugins } from '@capacitor/core';
-import { ActionSheetController } from '@ionic/angular';
+import { ActionSheetController, Platform } from '@ionic/angular';
 import { SocialSharing } from '@ionic-native/social-sharing/ngx';
 import { NativeStorage } from '@ionic-native/native-storage/ngx';
 import { DataLocalService } from '../../services/data-local.service';
@@ -15,7 +15,8 @@ export class NoticiaComponent implements OnInit {
   @Input() noticia: Article;
   @Input() indice: number;
   @Input() enFavoritos;
-  constructor(private actionSheetController: ActionSheetController, private socialSharing: SocialSharing,private dataLocal: DataLocalService) { }
+  constructor(private actionSheetController: ActionSheetController, private socialSharing: SocialSharing,
+    private dataLocal: DataLocalService, private platform: Platform) { }
 
   ngOnInit() { }
   async abrirNoticia() {
@@ -53,12 +54,8 @@ export class NoticiaComponent implements OnInit {
           icon: 'share',
           handler: () => {
             console.log('Share clicked');
-            this.socialSharing.share(
-              this.noticia.title,
-              this.noticia.source.name,
-              '',
-              this.noticia.url
-            )
+            this.compartirNoticia();
+           
           },
           
         }, 
@@ -73,5 +70,28 @@ export class NoticiaComponent implements OnInit {
         }]
     });
     await actionSheet.present();
+  }
+  compartirNoticia(){
+    if (this.platform.is('cordova')) {
+      this.socialSharing.share(
+        this.noticia.title,
+        this.noticia.source.name,
+        '',
+        this.noticia.url
+      )
+    }else{
+      if (navigator.share) {
+        navigator.share({
+          title: this.noticia.title,
+          text: this.noticia.description,
+          url: this.noticia.url,
+        })
+          .then(() => console.log('Noticia Compartida Correctamente'))
+          .catch((error) => console.log('Error al Compartir', error));
+      }else{
+        console.log('No se soporta en este navegador')
+      }
+    }
+   
   }
 }
